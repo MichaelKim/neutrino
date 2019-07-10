@@ -1,0 +1,19 @@
+{
+  "name": "neutrino",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "bin": {
+    "neutrinojs": "./dist/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LenKagamine/neutrino.git"
+  },
+  "author": "Michael Kim <micklepickle98@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LenKagamine/neutrino/issues"
+  },
+  "homepage": "https://github.com/LenKagamine/neutrino#readme"
+}
