@@ -7,7 +7,9 @@
 #include "webview.hpp"
 
 #include <experimental/filesystem>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 
 namespace fs = std::experimental::filesystem;
 using json = nlohmann::json;
@@ -68,6 +70,25 @@ void callback(wv::WebView &w, std::string &arg) {
 
   if (j["type"] == "log") {
     std::cout << j["data"] << std::endl;
+  } else if (j["type"] == "fs.readFile") {
+    // TODO: add error checking
+    std::string filepath = j["filepath"];
+    std::string id = j["id"];
+
+    std::cout << "current dir: " << fs::current_path() << std::endl;
+
+    std::cout << "reading file: " << filepath << std::endl;
+
+    std::ifstream input(filepath.c_str());
+    std::stringstream sstr;
+    sstr << input.rdbuf();
+
+    std::string contents = sstr.str();
+
+    std::cout << "contents: " << contents << std::endl;
+
+    w.eval("window.external.cpp.emit('" + id + "', {err: null, data: '" +
+           contents + "'});");
   } else {
     std::cout << j << std::endl;
   }
@@ -97,6 +118,25 @@ WEBVIEW_MAIN {
   }
 
   w.eval(R"inject(
+  window.external.cpp = new function() {
+    const onces = {};
+      function once(eventName, callback) {
+        if (onces[eventName] == null) {
+            onces[eventName] = [];
+        }
+        onces[eventName].push(callback);
+      }
+      function emit(eventName, arg) {
+        if (onces[eventName]) {
+          onces[eventName].forEach(o => o(arg));
+          delete onces[eventName];
+        }
+      }
+    return {
+      once,
+      emit
+    };
+  };
   window.external.neutrino = new Worker("main.js");
   window.external.neutrino.onmessage = e => window.external.invoke(e.data);
   console.log("worker injected");

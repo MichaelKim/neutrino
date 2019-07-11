@@ -2,9 +2,9 @@
   "name": "neutrino",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "./lib/index.js",
   "bin": {
-    "neutrinojs": "./dist/cli.js"
+    "neutrinojs": "./lib/cli.js"
   },
   "repository": {
     "type": "git",
