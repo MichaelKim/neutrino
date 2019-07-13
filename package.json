@@ -1,7 +1,7 @@
 {
   "name": "neutrino",
   "version": "1.0.0",
-  "description": "",
+  "description": "Build desktop applications using your OS' native web engine",
   "main": "./lib/index.js",
   "bin": {
     "neutrinojs": "./lib/cli.js"

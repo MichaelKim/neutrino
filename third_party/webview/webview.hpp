@@ -575,11 +575,34 @@ int WebView::init() {
                      G_CALLBACK(webview_context_menu_cb), nullptr);
   }
 
-  webkit_web_view_run_javascript(
-      WEBKIT_WEB_VIEW(webview),
-      "window.external={invoke:function(x){"
-      "window.webkit.messageHandlers.external.postMessage(x);}}",
-      NULL, NULL, NULL);
+  webkit_web_view_run_javascript(WEBKIT_WEB_VIEW(webview),
+                                 R"js(
+        window.external={
+          invoke:function(x){
+            window.webkit.messageHandlers.external.postMessage(x);
+          },
+          cpp: new function() {
+            const onces = {};
+            function once(eventName, callback) {
+              if (onces[eventName] == null) {
+                  onces[eventName] = [];
+              }
+              onces[eventName].push(callback);
+            }
+            function emit(eventName, arg) {
+              if (onces[eventName]) {
+                onces[eventName].forEach(o => o(arg));
+                delete onces[eventName];
+              }
+            }
+            return {
+              once,
+              emit
+            };
+          }
+        }
+      )js",
+                                 NULL, NULL, NULL);
 
   // Done initialization, set properties
   init_done = true;
