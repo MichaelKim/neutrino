@@ -139,15 +139,34 @@ WEBVIEW_MAIN {
 
   w.setCallback(callback);
 
+  w.preEval(Str(R"inject(
+    window.external.cpp = new function() {
+      const onces = {};
+      function once(eventName, callback) {
+        if (onces[eventName] == null) {
+            onces[eventName] = [];
+        }
+        onces[eventName].push(callback);
+      }
+      function emit(eventName, arg) {
+        if (onces[eventName]) {
+          onces[eventName].forEach(o => o(arg));
+          delete onces[eventName];
+        }
+      }
+      return {
+        once,
+        emit
+      };
+    }
+    window.external.neutrino = new Worker("../main/main.js");
+    window.external.neutrino.onmessage = e => window.external.invoke(e.data);
+    console.log("worker injected");
+  )inject"));
+
   if (w.init() == -1) {
     return 1;
   }
-
-  w.eval(R"inject(
-  window.external.neutrino = new Worker("main.js");
-  window.external.neutrino.onmessage = e => window.external.invoke(e.data);
-  console.log("worker injected");
-  )inject");
 
   w.eval("window.external.neutrino.postMessage({type: 'emit', eventName: "
          "'ready'});");
