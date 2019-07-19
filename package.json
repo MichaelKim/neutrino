@@ -4,7 +4,8 @@
   "description": "Build desktop applications using your OS' native web engine",
   "main": "./lib/index.js",
   "bin": {
-    "neutrinojs": "./lib/cli.js"
+    "neutrinojs": "./lib/cli.js",
+    "neutrino-builder": "./lib/build.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/LenKagamine/neutrino/issues"
   },
-  "homepage": "https://github.com/LenKagamine/neutrino#readme"
+  "homepage": "https://github.com/LenKagamine/neutrino#readme",
+  "devDependencies": {
+    "fs-extra": "^8.1.0"
+  }
 }
