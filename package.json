@@ -1,5 +1,5 @@
 {
-  "name": "neutrino",
+  "name": "neutrinojs",
   "version": "1.0.0",
   "description": "Build desktop applications using your OS' native web engine",
   "main": "./lib/index.js",
