@@ -1,10 +1,15 @@
 #include "json.hpp"
 #include "webview.hpp"
 
-#include <experimental/filesystem>
-#include <fstream>
-#include <iostream>
-#include <sstream>
+#include <algorithm>               // std::replace
+#include <experimental/filesystem> // fs::absolute, fs::exists
+#include <fstream>                 // File read / write
+#include <iostream>                // Debug output
+#include <sstream>                 // File input to string
+
+#ifdef WEBVIEW_WIN
+#include <shellapi.h> // For CommandLineToArgvW
+#endif
 
 namespace fs = std::experimental::filesystem;
 using json = nlohmann::json;
@@ -17,25 +22,27 @@ void usage() {
 #if defined(WEBVIEW_WIN)
 wv::String getPath() {
   if (fs::exists(fs::absolute("app") / "index.html")) {
-    return "file://" + fs::absolute("app").string();
+    wv::String path = L"file://" + fs::absolute("app").wstring();
+    std::replace(path.begin(), path.end(), '\\', '/');
+    return path;
   }
 
   int argc;
   wchar_t **arglist = CommandLineToArgvW(GetCommandLineW(), &argc);
 
   if (argc != 2) {
-    return "";
+    return L"";
   }
 
   wv::String path(arglist[1]);
   // GetFullPathNameW
-  if (path.find_first_of("http://") == 0 ||
-      path.find_first_of("https://") == 0) {
+  if (path.find_first_of(L"http://") == 0 ||
+      path.find_first_of(L"https://") == 0) {
     return path;
   }
 
   // Local file path
-  return "file://" + fs::absolute(path).string();
+  return L"file://" + fs::absolute(path).wstring();
 }
 #else
 wv::String getPath(int argc, char **argv) {
@@ -59,46 +66,46 @@ wv::String getPath(int argc, char **argv) {
 #endif
 
 void callback(wv::WebView &w, std::string &arg) {
+  std::cout << arg << std::endl;
   json j = json::parse(arg);
   auto type = j["type"].get<std::string>();
+  std::cout << type << std::endl;
 
   if (type == "log") {
     std::cout << j["data"] << std::endl;
   } else if (type == "fs.readFile") {
-    std::string id = "";
+    std::string id = j["id"].get<std::string>();
+    std::wstring wid(id.begin(), id.end());
     try {
-      id = j["id"].get<std::string>();
       auto filepath = j["filepath"].get<std::string>();
 
       std::cout << "current dir: " << fs::current_path() << std::endl;
-
       std::cout << "reading file: " << filepath << std::endl;
 
       std::ifstream input(filepath.c_str());
       if (!input.is_open()) {
-        w.eval("window.external.cpp.emit('" + id +
-               "', {err: 'Missing file'});");
+        w.eval(Str("window.external.cpp.emit('") + wid +
+               Str("', {err: 'Missing file'});"));
         return;
       }
       std::stringstream sstr;
       sstr << input.rdbuf();
 
       std::string contents = sstr.str();
+      std::wstring wcontents(contents.begin(), contents.end());
 
       std::cout << "contents: " << contents << std::endl;
 
-      w.eval("window.external.cpp.emit('" + id + "', {data: '" + contents +
-             "'});");
+      w.eval(Str("window.external.cpp.emit('") + wid + Str("', {data: '") +
+             wcontents + Str("'});"));
     } catch (json::exception &ex) {
-      if (id != "") {
-        w.eval("window.external.cpp.emit('" + id + "', {err: '" + ex.what() +
-               "'});");
-      }
+      w.eval(Str("window.external.cpp.emit('") + wid +
+             Str("', {err: '") /* + ex.what() */ + Str("'});"));
     }
   } else if (type == "fs.writeFile") {
-    std::string id = "";
+    std::string id = j["id"].get<std::string>();
+    std::wstring wid(id.begin(), id.end());
     try {
-      id = j["id"].get<std::string>();
       auto filepath = j["filepath"].get<std::string>();
       auto data = j["data"].get<std::string>();
 
@@ -109,11 +116,10 @@ void callback(wv::WebView &w, std::string &arg) {
       std::ofstream output(filepath.c_str());
       output << data;
 
-      w.eval("window.external.cpp.emit('" + id + "');");
+      w.eval(Str("window.external.cpp.emit('") + wid + Str("');"));
     } catch (json::exception &ex) {
-      if (id != "") {
-        w.eval("window.external.cpp.emit('" + id + "', '" + ex.what() + "');");
-      }
+      w.eval(Str("window.external.cpp.emit('") + wid +
+             Str("', '") /* + ex.what() */ + Str("');"));
     }
   } else {
     std::cout << j << std::endl;
@@ -132,10 +138,14 @@ WEBVIEW_MAIN {
     return 0;
   }
 
+#ifdef WEBVIEW_WIN
+  std::wcout << L"Loading: " << path + L"/index.html" << std::endl;
+#else
   std::cout << "Loading: " << path + "/index.html" << std::endl;
+#endif
 
   wv::WebView w{
-      800, 600, true, true, Str("Lyra Music Player"), path + "/index.html"};
+      800, 600, true, true, Str("Lyra Music Player"), path + Str("/index.html")};
 
   w.setCallback(callback);
 
@@ -168,8 +178,8 @@ WEBVIEW_MAIN {
     return 1;
   }
 
-  w.eval("window.external.neutrino.postMessage({type: 'emit', eventName: "
-         "'ready'});");
+  w.eval(Str("window.external.neutrino.postMessage({type: 'emit', eventName: "
+             "'ready'});"));
 
   while (w.run() == 0)
     ;

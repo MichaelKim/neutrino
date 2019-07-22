@@ -12,7 +12,7 @@ Inspired from zerge's [webview](https://github.com/zserge/webview), this library
 
 |            | Windows            | MacOS                  | Linux                         |
 | ---------- | ------------------ | ---------------------- | ----------------------------- |
-| Version    | Windows 10, v1803+ | Tested on MacOS Mojave | Tested on Ubuntu 18.04.02 LTS |
+| Version    | Windows 10, v1809+ | Tested on MacOS Mojave | Tested on Ubuntu 18.04.02 LTS |
 | Web Engine | EdgeHTML           | Webkit                 | WebKit                        |
 | GUI        | Windows API        | Cocoa                  | GTK                           |
 
@@ -42,7 +42,9 @@ The following URL schemes are supported:
 
 - HTTP(S): `http://` and `https://`
 - Local file: `file:///`, make sure to point to an `html` file
+  - TODO: this doesn't work in Windows
 - Inline data: `data:text/html,<html>...</html>`
+  - TODO: test on Windows
 
 Check out example programs in the [`examples/`](examples/) directory in this repo.
 
@@ -70,6 +72,8 @@ In order to target EdgeHTML (Microsoft Edge), `webview` uses the new C++/WinRT A
 
 **tl;dr**: Upgrade to latest version of Windows 10, install Visual Studio 2019, install the Windows 10 SDK, and add the [C++/WinRT VSIX](https://marketplace.visualstudio.com/items?itemName=CppWinRTTeam.cppwinrt101804264).
 
+To debug, install the [Microsoft Edge DevTools](https://www.microsoft.com/en-us/p/microsoft-edge-devtools-preview/9mzbfrmz0mnj).
+
 #### Compiler
 
 - Requires C++17
@@ -78,8 +82,8 @@ In order to target EdgeHTML (Microsoft Edge), `webview` uses the new C++/WinRT A
 
 Also, use `std::wstring` in place of `std::string` when using webview APIs (with the exception of `wv::WebView::callback`).
 
-#### I don't like Visual Studio!
-
+<details><summary><strong>I don't like Visual Studio!</strong></summary>
+<p>
 While not officially supported, Microsoft does use Clang internally for testing purposes. If you want to use Clang, they have some basic instructions on their website [here](https://docs.microsoft.com/en-us/windows/uwp/cpp-and-winrt-apis/faq#can-i-use-llvmclang-to-compile-with-cwinrt).
 
 I've gotten `clang-cl` to compile with the following steps:
@@ -98,11 +102,14 @@ I've gotten `clang-cl` to compile with the following steps:
 
 You may result in some compiler errors in some of the `winrt::` headers. I fixed them by manually editing the headers in the `winrt/` subdirectory.
 
+</p>
+</details>
+
 #### Windows OS
 
-- Requires Windows 10, version 1803 (Build 17134), recommended version 1809 (Build 17763)
+- Requires Windows 10, version 1809 (Build 17763)
 
-The C++/WinRT API is fairly new, and its webview was introduced in v1803 ([UniversalAPIContract v6](https://docs.microsoft.com/en-us/uwp/api/windows.web.ui.interop.webviewcontrol)). For more information about API contracts, read this [blog post by Microsoft](https://blogs.windows.com/buildingapps/2015/09/15/dynamically-detecting-features-with-api-contracts-10-by-10/#sRg3eXXT8oJzhUxY.97).
+The C++/WinRT API is fairly new, and its webview was introduced in v1803 ([UniversalAPIContract v6](https://docs.microsoft.com/en-us/uwp/api/windows.web.ui.interop.webviewcontrol)). This also uses `WebViewControl.AddInitializeScript` introduced in v1809. For more information about API contracts, read this [blog post by Microsoft](https://blogs.windows.com/buildingapps/2015/09/15/dynamically-detecting-features-with-api-contracts-10-by-10/#sRg3eXXT8oJzhUxY.97).
 
 Also, displaying `localhost` in the webview will only work after adding a loopback exception. A simple way to enable this is to run
 
@@ -341,7 +348,15 @@ Navigates the webview to the specified URI.
 
 - uri: URI to the webpage
 
-### `run`
+### 'preEval'
+
+```c++
+void preEval(string js);
+```
+
+Injects the JavaScript string into the webpage before it loads.
+
+### `eval`
 
 ```c++
 void eval(string js);

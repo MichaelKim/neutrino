@@ -50,6 +50,18 @@ Currently, Neutrino is highly limited and only supports the following Node / Ele
 
 ## Build
 
+### Windows
+
+Use Visual Studio 2019 and CMake.
+
+```
+clang-cl neutrino.cpp /EHsc /I "." /I "./third_party/webview/" /I "./third_party/nlohmann/" /DWEBVIEW_WIN -Xclang -std=c++17 -Xclang -Wno-delete-non-virtual-dtor -o "lib/neutrino.exe" /link "WindowsApp.lib" "user32.lib" "kernel32.lib"
+```
+
+### MacOS
+
+### Linux
+
 Neutrino uses the experimental `std::filesystem` header, so you'll need a compiler with filesystem support. It also uses two external libraries:
 
 - [nlohmann's JSON library](https://github.com/nlohmann/json)

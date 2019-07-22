@@ -3,3 +3,7 @@ build/
 node_modules/
 lib/neutrino
 .DS_Store
+winrt_old/
+out/
+.vs/
+CMakeSettings.json
