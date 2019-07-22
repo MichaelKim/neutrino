@@ -7,3 +7,5 @@ winrt_old/
 out/
 .vs/
 CMakeSettings.json
+Debug/
+Release/
