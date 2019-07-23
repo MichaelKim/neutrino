@@ -172,13 +172,6 @@ int WebView::init() {
     return -1;
   }
 
-  if (debug) {
-    AllocConsole();
-    FILE *out, *err;
-    freopen_s(&out, "CONOUT$", "w", stdout);
-    freopen_s(&err, "CONOUT$", "w", stderr);
-  }
-
   // Initialize Win32 window
   WNDCLASSEX wc;
   wc.cbSize = sizeof(WNDCLASSEX);
@@ -235,7 +228,8 @@ int WebView::init() {
   // Set window bounds
   RECT r;
   GetClientRect(hwnd, &r);
-  Rect bounds(r.left, r.top, r.right - r.left, r.bottom - r.top);
+  // TODO: set bounds correctly
+  Rect bounds((float)r.left, (float)r.top, (float)(r.right - r.left), (float)(r.bottom - r.top));
   webview.Bounds(bounds);
 
   webview.IsVisible(true);

@@ -21,56 +21,75 @@ void usage() {
   std::cout << "Usage: neutrino [path]" << std::endl << std::endl;
 }
 
-wv::String format(std::string str) {
-#ifdef WEBVIEW_WIN
-  return std::wstring(str.begin(), str.end());
-#else
-  return str;
-#endif
-}
+/*
+Argument: directory path
+- main: path/main.js
+- __dirname: path
 
-#if defined(WEBVIEW_WIN)
-wv::String getPath() {
-  if (fs::exists(fs::absolute("app") / "index.html")) {
+Default path: ./app/
+- main: ./app/main.js
+- __dirname: ./app
+*/
+
+// Utility Functions
+#ifdef WEBVIEW_WIN
+#define Cout std::wcout
+std::wstring format(const std::string &str) {
+  if (str.empty()) {
+    return std::wstring();
+  }
+
+  int size = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+  std::wstring wstr(size, 0);
+  MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstr[0], size);
+  return wstr;
+}
+std::string normalize(const std::wstring &wstr) {
+  if (wstr.empty()) {
+    return std::string();
+  }
+
+  int size = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+  std::string str(size, 0);
+  WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], size, NULL, NULL);
+  return str;
+}
+std::wstring getPath() {
+  if (fs::exists(fs::absolute("app") / "main.js")) {
     wv::String path = fs::absolute("app").wstring();
-    std::replace(path.begin(), path.end(), '\\', '/');
     return path;
   }
 
   int argc;
-  wchar_t **arglist = CommandLineToArgvW(GetCommandLineW(), &argc);
+  wchar_t** arglist = CommandLineToArgvW(GetCommandLineW(), &argc);
 
   if (argc != 2) {
-    return L"";
-  }
-
-  wv::String path(arglist[1]);
-  // GetFullPathNameW
-  if (path.find_first_of(L"http://") == 0 ||
-      path.find_first_of(L"https://") == 0) {
-    return path;
+    return std::wstring();
   }
 
   // Local file path
+  wv::String path(arglist[1]);
   return fs::absolute(path).wstring();
 }
 #else
-wv::String getPath(int argc, char **argv) {
-  if (fs::exists(fs::absolute("app") / "index.html")) {
+#define Cout std::cout
+inline std::string format(std::string str) {
+  return str;
+}
+inline std::string normalize(std::string str) {
+  return str;
+}
+std::string getPath(int argc, char** argv) {
+  if (fs::exists(fs::absolute("app") / "main.js")) {
     return fs::absolute("app").string();
   }
 
   if (argc != 2) {
-    return "";
-  }
-
-  wv::String path(argv[1]);
-  if (path.find_first_of("http://") == 0 ||
-      path.find_first_of("https://") == 0) {
-    return path;
+    return std::string();
   }
 
   // Local file path
+  wv::String path(argv[1]);
   return fs::absolute(path).string();
 }
 #endif
@@ -106,8 +125,9 @@ void callback(wv::WebView &w, std::string &arg) {
       w.eval(Str("window.external.cpp.emit('") + id + Str("', {data: '") +
              contents + Str("'});"));
     } catch (json::exception &ex) {
+      wv::String err = format(ex.what());
       w.eval(Str("window.external.cpp.emit('") + id +
-             Str("', {err: '") /* + ex.what() */ + Str("'});"));
+             Str("', {err: '") + err + Str("'});"));
     }
   } else if (type == "fs.writeFile") {
     try {
@@ -123,8 +143,9 @@ void callback(wv::WebView &w, std::string &arg) {
 
       w.eval(Str("window.external.cpp.emit('") + id + Str("');"));
     } catch (json::exception &ex) {
+      wv::String err = format(ex.what());
       w.eval(Str("window.external.cpp.emit('") + id +
-             Str("', '") /* + ex.what() */ + Str("');"));
+             Str("', '") + err + Str("');"));
     }
   } else {
     std::cout << j << std::endl;
@@ -212,7 +233,7 @@ duk_ret_t navigate(duk_context *ctx) {
   wv::String url = format(duk_to_string(ctx, -1));
   duk_pop(ctx);
 
-  std::cout << "navigating to " << url << std::endl;
+  Cout << Str("navigating to ") << url << std::endl;
   windows[id]->navigate(url);
 
   return 0;
@@ -225,36 +246,30 @@ duk_ret_t quitApp(duk_context *ctx) {
     delete w;
   }
   windows.clear();
+  return 0;
 }
 
 WEBVIEW_MAIN {
 #if defined(WEBVIEW_WIN)
+  AllocConsole();
+  FILE* out,* err;
+  freopen_s(&out, "CONOUT$", "w", stdout);
+  freopen_s(&err, "CONOUT$", "w", stderr);
   std::wstring path = getPath();
 #else
   std::string path = getPath(argc, argv);
 #endif
 
-  if (path.length() == 0) {
+  if (path.empty()) {
     usage();
     return 0;
   }
 
-#ifdef WEBVIEW_WIN
-  std::wcout << L"Loading: " << path << std::endl;
-#else
-  std::cout << "Loading: " << path << std::endl;
-#endif
-
-  // Create Duktape heap and context
-  duk_context *ctx = duk_create_heap_default();
-  if (!ctx) {
-    std::cout << "Could not create JS context" << std::endl;
-    return 1;
-  }
+  Cout << Str("Loading: ") << path << std::endl;
 
   // Get main file
-  std::cout << "Opening main: " << path + "/main.js" << std::endl;
-  std::ifstream mainFile(path + "/main.js");
+  Cout << Str("Opening main: ") << path + Str("/main.js") << std::endl;
+  std::ifstream mainFile(path + Str("/main.js"));
   if (!mainFile.is_open()) {
     std::cout << "Cannot open main file" << std::endl;
     return 1;
@@ -263,6 +278,13 @@ WEBVIEW_MAIN {
   sstr << mainFile.rdbuf();
   std::string mainContents = sstr.str();
   mainFile.close();
+
+  // Create Duktape heap and context
+  duk_context *ctx = duk_create_heap_default();
+  if (!ctx) {
+    std::cout << "Could not create JS context" << std::endl;
+    return 1;
+  }
 
   // JS-C++ bindings
   duk_push_c_function(ctx, log, DUK_VARARGS);
@@ -273,7 +295,7 @@ WEBVIEW_MAIN {
   duk_put_global_string(ctx, "n_navigate");
   duk_push_c_function(ctx, quitApp, DUK_VARARGS);
   duk_put_global_string(ctx, "n_quit");
-  duk_push_string(ctx, path.c_str());
+  duk_push_string(ctx, normalize(path).c_str());
   duk_put_global_string(ctx, "__dirname");
 
   // Execute main script

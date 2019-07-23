@@ -2,6 +2,7 @@
 build/
 node_modules/
 lib/neutrino
+lib/neutrino.exe
 .DS_Store
 winrt_old/
 out/
