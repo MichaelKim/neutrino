@@ -33,10 +33,7 @@ Path must be directory that contains
 
 ## Packaging
 
-To package your app, it must first be in a specific location for Neutrino to find it.
-
-- `./dist/main/`: Directory containing `main.js`
-- `./dist/renderer/`: Directory containing at the very least `index.html`
+To package your app, all of the app files must be located in `./dist/dev/`. At the very least, this includes `index.html` and `main.js`.
 
 Once it's ready, run the command `neutrino-builder`. This will copy the contents of both directories and place them in `./dist/${your-package-name}/app`. It will also place a copy of the `neutrino` executable into `./dist/${your-package-name}`, renamed to your package name.
 
@@ -44,6 +41,10 @@ Once it's ready, run the command `neutrino-builder`. This will copy the contents
 
 Currently, Neutrino is highly limited and only supports the following Node / Electron APIs:
 
+- app
+  - on
+    - 'ready'
+- BrowserWindow
 - fs
   - readFile
   - writeFile

@@ -5,14 +5,18 @@ endif()
 project (neutrino)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../lib)
 
 if(WIN32)
 	set(CMAKE_WIN32_EXECUTABLE YES)
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/duktape)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/nlohmann)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview)
 
 if(APPLE)
   include_directories(/usr/local/opt/llvm/include)
@@ -23,4 +27,4 @@ elseif(UNIX)
 endif()
 
 add_executable(neutrino neutrino.cpp)
-target_link_libraries(neutrino PUBLIC ${NEUTRINO_LIBS} webview json)
+target_link_libraries(neutrino PUBLIC ${NEUTRINO_LIBS} duktape json webview)

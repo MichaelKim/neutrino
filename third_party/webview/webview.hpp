@@ -142,6 +142,7 @@ private:
   static void webview_load_changed_cb(WebKitWebView *webview,
                                       WebKitLoadEvent event, gpointer arg);
   static void destroyWindowCb(GtkWidget *widget, gpointer arg);
+  // static gboolean closeWebViewCb(WebKitWebView *webView, GtkWidget *window);
   static gboolean webview_context_menu_cb(WebKitWebView *webview,
                                           GtkWidget *default_menu,
                                           WebKitHitTestResult *hit_test_result,
@@ -698,7 +699,7 @@ void WebView::destroyWindowCb(GtkWidget *widget, gpointer arg) {
   static_cast<WebView *>(arg)->exit();
 }
 
-// static gboolean closeWebViewCb(WebKitWebView *webView, GtkWidget *window) {
+// gboolean WebView::closeWebViewCb(WebKitWebView *webView, GtkWidget *window) {
 //   gtk_widget_destroy(window);
 //   return TRUE;
 // }
