@@ -2,7 +2,6 @@
 #include "json.hpp"
 #include "webview.hpp"
 
-#include <algorithm>               // std::replace
 #include <experimental/filesystem> // fs::absolute, fs::exists
 #include <fstream>                 // File read / write
 #include <iostream>                // Debug output
@@ -49,9 +48,11 @@ std::string normalize(const std::wstring &wstr) {
     return std::string();
   }
 
-  int size = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+  int size = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL,
+                                 0, NULL, NULL);
   std::string str(size, 0);
-  WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], size, NULL, NULL);
+  WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], size,
+                      NULL, NULL);
   return str;
 }
 std::wstring getPath() {
@@ -61,7 +62,7 @@ std::wstring getPath() {
   }
 
   int argc;
-  wchar_t** arglist = CommandLineToArgvW(GetCommandLineW(), &argc);
+  wchar_t **arglist = CommandLineToArgvW(GetCommandLineW(), &argc);
 
   if (argc != 2) {
     return std::wstring();
@@ -73,13 +74,9 @@ std::wstring getPath() {
 }
 #else
 #define Cout std::cout
-inline std::string format(std::string str) {
-  return str;
-}
-inline std::string normalize(std::string str) {
-  return str;
-}
-std::string getPath(int argc, char** argv) {
+inline std::string format(std::string str) { return str; }
+inline std::string normalize(std::string str) { return str; }
+std::string getPath(int argc, char **argv) {
   if (fs::exists(fs::absolute("app") / "main.js")) {
     return fs::absolute("app").string();
   }
@@ -94,59 +91,61 @@ std::string getPath(int argc, char** argv) {
 }
 #endif
 
+// Neutrino API
+
+std::tuple<wv::String, wv::String> readFile(std::string filepath) {
+  try {
+    std::cout << "current dir: " << fs::current_path() << std::endl;
+    std::cout << "reading file: " << filepath << std::endl;
+
+    std::ifstream input(filepath.c_str());
+    if (!input.is_open()) {
+      return {Str(""), Str("Missing File")};
+    }
+
+    std::stringstream sstr;
+    sstr << input.rdbuf();
+
+    wv::String contents = format(sstr.str());
+
+    return {contents, Str("")};
+  } catch (json::exception &ex) {
+    wv::String err = format(ex.what());
+    return {Str(""), err};
+  }
+}
+
+void writeFile(std::string filepath, std::string data) {
+  std::cout << "current dir: " << fs::current_path() << std::endl;
+
+  std::cout << "writing file: " << filepath << std::endl;
+
+  std::ofstream output(filepath.c_str());
+  output << data;
+}
+
 void callback(wv::WebView &w, std::string &arg) {
   std::cout << arg << std::endl;
-  json j = json::parse(arg);
+  auto j = json::parse(arg);
   auto type = j["type"].get<std::string>();
   std::cout << type << std::endl;
 
-  wv::String id = format(j["id"].get<std::string>());
+  auto id = format(j["id"].get<std::string>());
 
   if (type == "log") {
     std::cout << j["data"] << std::endl;
   } else if (type == "fs.readFile") {
-    try {
-      auto filepath = j["filepath"].get<std::string>();
+    auto filepath = j["filepath"].get<std::string>();
 
-      std::cout << "current dir: " << fs::current_path() << std::endl;
-      std::cout << "reading file: " << filepath << std::endl;
+    auto [contents, err] = readFile(filepath);
 
-      std::ifstream input(filepath.c_str());
-      if (!input.is_open()) {
-        w.eval(Str("window.external.cpp.emit('") + id +
-               Str("', {err: 'Missing file'});"));
-        return;
-      }
-      std::stringstream sstr;
-      sstr << input.rdbuf();
-
-      wv::String contents = format(sstr.str());
-
-      w.eval(Str("window.external.cpp.emit('") + id + Str("', {data: '") +
-             contents + Str("'});"));
-    } catch (json::exception &ex) {
-      wv::String err = format(ex.what());
-      w.eval(Str("window.external.cpp.emit('") + id +
-             Str("', {err: '") + err + Str("'});"));
-    }
+    w.eval(Str("window.external.cpp.emit('") + id + Str("', {data: '") +
+           contents + Str("', err: '") + err + Str("'});"));
   } else if (type == "fs.writeFile") {
-    try {
-      auto filepath = j["filepath"].get<std::string>();
-      auto data = j["data"].get<std::string>();
-
-      std::cout << "current dir: " << fs::current_path() << std::endl;
-
-      std::cout << "writing file: " << filepath << std::endl;
-
-      std::ofstream output(filepath.c_str());
-      output << data;
-
-      w.eval(Str("window.external.cpp.emit('") + id + Str("');"));
-    } catch (json::exception &ex) {
-      wv::String err = format(ex.what());
-      w.eval(Str("window.external.cpp.emit('") + id +
-             Str("', '") + err + Str("');"));
-    }
+    auto filepath = j["filepath"].get<std::string>();
+    auto data = j["data"].get<std::string>();
+    writeFile(filepath, data);
+    w.eval(Str("window.external.cpp.emit('") + id + Str("');"));
   } else {
     std::cout << j << std::endl;
   }
@@ -175,22 +174,38 @@ duk_ret_t createWindow(duk_context *ctx) {
 
   // Get width
   duk_get_prop_string(ctx, -1, "width");
-  int width = duk_get_int_default(ctx, -1, 800);
+  auto width = duk_get_int_default(ctx, -1, 800);
   duk_pop(ctx);
 
   // Get height
   duk_get_prop_string(ctx, -1, "height");
-  int height = duk_get_int_default(ctx, -1, 600);
+  auto height = duk_get_int_default(ctx, -1, 600);
   duk_pop(ctx);
 
   // Get title
   duk_get_prop_string(ctx, -1, "title");
-  wv::String title = format(duk_get_string_default(ctx, -1, "Neutrino"));
+  auto title = format(duk_get_string_default(ctx, -1, "Neutrino"));
+  duk_pop(ctx);
+
+  // Background Color (rgba)
+  duk_get_prop_string(ctx, -1, "_bgColorR");
+  auto bgR = duk_get_uint_default(ctx, -1, 255);
+  duk_pop(ctx);
+  duk_get_prop_string(ctx, -1, "_bgColorG");
+  auto bgG = duk_get_uint_default(ctx, -1, 255);
+  duk_pop(ctx);
+  duk_get_prop_string(ctx, -1, "_bgColorB");
+  auto bgB = duk_get_uint_default(ctx, -1, 255);
+  duk_pop(ctx);
+  duk_get_prop_string(ctx, -1, "_bgColorA");
+  auto bgA = duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
 
   wv::WebView *w = new wv::WebView{width, height, true, true, title};
 
   w->setCallback(callback);
+
+  w->setBgColor(bgR, bgG, bgB, bgA);
 
   w->preEval(Str(R"inject(
     window.external.cpp = new function() {
@@ -250,14 +265,14 @@ duk_ret_t quitApp(duk_context *ctx) {
 }
 
 WEBVIEW_MAIN {
-#if defined(WEBVIEW_WIN)
+#ifdef WEBVIEW_WIN
   AllocConsole();
-  FILE* out,* err;
+  FILE *out, *err;
   freopen_s(&out, "CONOUT$", "w", stdout);
   freopen_s(&err, "CONOUT$", "w", stderr);
-  std::wstring path = getPath();
+  auto path = getPath();
 #else
-  std::string path = getPath(argc, argv);
+  auto path = getPath(argc, argv);
 #endif
 
   if (path.empty()) {
@@ -280,7 +295,7 @@ WEBVIEW_MAIN {
   mainFile.close();
 
   // Create Duktape heap and context
-  duk_context *ctx = duk_create_heap_default();
+  auto *ctx = duk_create_heap_default();
   if (!ctx) {
     std::cout << "Could not create JS context" << std::endl;
     return 1;
