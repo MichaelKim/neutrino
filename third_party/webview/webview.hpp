@@ -116,6 +116,7 @@ private:
   WebViewControl webview{nullptr};
   MSG msg; // Message from main loop
 
+  void resize();
   static LRESULT CALLBACK WndProcedure(HWND hwnd, UINT msg, WPARAM wparam,
                                        LPARAM lparam);
 #elif defined(WEBVIEW_MAC) // WEBVIEW_WIN
@@ -198,6 +199,16 @@ int WebView::init() {
     return 0;
   }
 
+  // Set window size
+  RECT r;
+  r.left = 0;
+  r.top = 0;
+  r.right = width;
+  r.bottom = height;
+  SetWindowPos(hwnd, NULL, r.left, r.top, r.right - r.left, r.bottom - r.top,
+               SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+
+  // Used with GetWindowLongPtr
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)this);
 
   ShowWindow(hwnd, SW_SHOWDEFAULT);
@@ -225,12 +236,8 @@ int WebView::init() {
   webview.NavigationStarting(
       [=](auto &&, auto &&) { webview.AddInitializeScript(inject); });
 
-  // Set window bounds
-  RECT r;
-  GetClientRect(hwnd, &r);
-  // TODO: set bounds correctly
-  Rect bounds((float)r.left, (float)r.top, (float)(r.right - r.left), (float)(r.bottom - r.top));
-  webview.Bounds(bounds);
+  // Set webview bounds
+  resize();
 
   webview.IsVisible(true);
 
@@ -318,12 +325,28 @@ void WebView::css(std::wstring css) {
 
 void WebView::exit() { PostQuitMessage(WM_QUIT); }
 
+void WebView::resize() {
+  RECT rc;
+  GetClientRect(hwnd, &rc);
+  Rect bounds((float)rc.left, (float)rc.top, (float)(rc.right - rc.left),
+              (float)(rc.bottom - rc.top));
+  webview.Bounds(bounds);
+}
+
 LRESULT CALLBACK WebView::WndProcedure(HWND hwnd, UINT msg, WPARAM wparam,
                                        LPARAM lparam) {
   WebView *w =
       reinterpret_cast<WebView *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
   switch (msg) {
+  case WM_SIZE:
+    // WM_SIZE will first fire before the webview finishes loading
+    // init() calls resize(), so this call is only for size changes
+    // after fully loading.
+    if (w != nullptr && w->init_done) {
+      w->resize();
+    }
+    return DefWindowProc(hwnd, msg, wparam, lparam);
   case WM_CLOSE:
     DestroyWindow(hwnd);
     break;
