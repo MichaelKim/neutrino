@@ -1,20 +1,17 @@
-"use strict";
-
 function readFile(filepath, encoding, callback) {
-  var id = Date.now().toString();
-  window.external.invoke(JSON.stringify({
-    type: 'fs.readFile',
-    filepath: filepath,
-    id: id
-  }));
-  window.external.cpp.once(id, function (_ref) {
-    var err = _ref.err,
-        data = _ref.data;
+  const id = Date.now().toString();
 
+  window.external.invoke(
+    JSON.stringify({
+      type: 'fs.readFile',
+      filepath,
+      id
+    })
+  );
+
+  window.external.cpp.once(id, ({ err, data }) => {
     if (err) {
-      callback({
-        message: err
-      }, null);
+      callback({ message: err }, null);
     } else {
       callback(null, data);
     }
@@ -22,20 +19,25 @@ function readFile(filepath, encoding, callback) {
 }
 
 function writeFile(filepath, data, callback) {
-  var id = Date.now().toString();
-  window.external.invoke(JSON.stringify({
-    type: 'fs.writeFile',
-    filepath: filepath,
-    id: id,
-    data: data
-  }));
+  const id = Date.now().toString();
+
+  window.external.invoke(
+    JSON.stringify({
+      type: 'fs.writeFile',
+      filepath,
+      id,
+      data
+    })
+  );
+
   window.external.cpp.once(id, callback);
 }
 
 module.exports = {
-  readFile: readFile,
-  writeFile: writeFile
+  readFile,
+  writeFile
 };
+
 /*
 
 main listens to event (e.g. ready):

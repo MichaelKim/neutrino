@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Build desktop applications using your OS' native web engine",
   "main": "./lib/index.js",
+  "scripts": {
+    "build": "babel src -d lib"
+  },
   "bin": {
     "neutrinojs": "./lib/cli.js",
     "neutrino-builder": "./lib/build.js"
@@ -18,6 +21,10 @@
   },
   "homepage": "https://github.com/LenKagamine/neutrino#readme",
   "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-proposal-object-rest-spread": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
     "fs-extra": "^8.1.0"
   }
 }
