@@ -14,8 +14,9 @@ if(WIN32)
 	set(CMAKE_WIN32_EXECUTABLE YES)
 endif()
 
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/duktape)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/duktape)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/nlohmann)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/quickjs)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview)
 
 if(APPLE)
@@ -27,4 +28,5 @@ elseif(UNIX)
 endif()
 
 add_executable(neutrino neutrino.cpp)
-target_link_libraries(neutrino PUBLIC ${NEUTRINO_LIBS} duktape json webview)
+# target_link_libraries(neutrino PUBLIC ${NEUTRINO_LIBS} duktape json webview)
+target_link_libraries(neutrino PUBLIC ${NEUTRINO_LIBS} json quickjs webview)

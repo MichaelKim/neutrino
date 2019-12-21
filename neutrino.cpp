@@ -1,15 +1,15 @@
-#include "duktape.h"
 #include "json.hpp"
+#include "quickjs-libc.h"
 #include "webview.hpp"
 
-#include <experimental/filesystem> // fs::absolute, fs::exists
-#include <fstream>                 // File read / write
-#include <iostream>                // Debug output
-#include <sstream>                 // File input to string
-#include <unordered_map>           // std::vector
+#include <experimental/filesystem>  // fs::absolute, fs::exists
+#include <fstream>                  // File read / write
+#include <iostream>                 // Debug output
+#include <sstream>                  // File input to string
+#include <unordered_map>            // std::vector
 
 #ifdef WEBVIEW_WIN
-#include <shellapi.h> // For CommandLineToArgvW
+#include <shellapi.h>  // For CommandLineToArgvW
 #endif
 
 namespace fs = std::experimental::filesystem;
@@ -91,6 +91,28 @@ std::string getPath(int argc, char **argv) {
 }
 #endif
 
+int getIntPropDefault(JSContext *ctx, JSValueConst obj, const char *prop,
+                      int def) {
+  JSValue val = JS_GetPropertyStr(ctx, obj, prop);
+  if (JS_IsUndefined(val)) {
+    return def;
+  }
+  int ret;
+  if (JS_ToInt32(ctx, &ret, val)) {
+    return def;
+  }
+  return ret;
+}
+
+wv::String getStrPropDefault(JSContext *ctx, JSValueConst obj, const char *prop,
+                             std::string def) {
+  JSValue val = JS_GetPropertyStr(ctx, obj, prop);
+  if (JS_IsUndefined(val)) {
+    return format(def);
+  }
+  return format(std::string(JS_ToCString(ctx, val)));
+}
+
 // Neutrino API
 
 std::tuple<wv::String, wv::String> readFile(std::string filepath) {
@@ -155,51 +177,48 @@ void callback(wv::WebView &w, std::string &arg) {
 std::unordered_map<std::string, wv::WebView *> windows;
 
 // App
-duk_ret_t log(duk_context *ctx) {
-  duk_push_string(ctx, " ");
-  duk_insert(ctx, 0);
-  duk_join(ctx, duk_get_top(ctx) - 1);
-  auto msg = duk_safe_to_string(ctx, -1);
-  std::cout << msg << std::endl;
-  return 0;
+JSValue log(JSContext *ctx, JSValueConst this_val, int argc,
+            JSValueConst *argv) {
+  for (int i = 0; i < argc; i++) {
+    if (i != 0) std::cout << ' ';
+    const char *str = JS_ToCString(ctx, argv[i]);
+    if (!str) return JS_EXCEPTION;
+    std::cout << str;
+    JS_FreeCString(ctx, str);
+  }
+  std::cout << std::endl;
+  return JS_UNDEFINED;
 }
 
-duk_ret_t createWindow(duk_context *ctx) {
+// opts, ID
+JSValue createWindow(JSContext *ctx, JSValueConst this_val, int argc,
+                     JSValueConst *argv) {
+  if (argc < 2) {
+    std::cout << "n_createWindow: requires 2 arguments, got " << argc
+              << std::endl;
+    return JS_EXCEPTION;
+  }
+
   // Get window ID
-  std::string id = duk_to_string(ctx, -1);
-  duk_pop(ctx);
+  std::string id = JS_ToCString(ctx, argv[1]);
 
   // Get window options
-  duk_to_object(ctx, -1);
+  auto opts = argv[0];
 
   // Get width
-  duk_get_prop_string(ctx, -1, "width");
-  auto width = duk_get_int_default(ctx, -1, 800);
-  duk_pop(ctx);
+  int width = getIntPropDefault(ctx, opts, "width", 800);
 
   // Get height
-  duk_get_prop_string(ctx, -1, "height");
-  auto height = duk_get_int_default(ctx, -1, 600);
-  duk_pop(ctx);
+  int height = getIntPropDefault(ctx, opts, "height", 600);
 
   // Get title
-  duk_get_prop_string(ctx, -1, "title");
-  auto title = format(duk_get_string_default(ctx, -1, "Neutrino"));
-  duk_pop(ctx);
+  auto title = getStrPropDefault(ctx, opts, "title", "Neutrino");
 
   // Background Color (rgba)
-  duk_get_prop_string(ctx, -1, "_bgColorR");
-  auto bgR = duk_get_uint_default(ctx, -1, 255);
-  duk_pop(ctx);
-  duk_get_prop_string(ctx, -1, "_bgColorG");
-  auto bgG = duk_get_uint_default(ctx, -1, 255);
-  duk_pop(ctx);
-  duk_get_prop_string(ctx, -1, "_bgColorB");
-  auto bgB = duk_get_uint_default(ctx, -1, 255);
-  duk_pop(ctx);
-  duk_get_prop_string(ctx, -1, "_bgColorA");
-  auto bgA = duk_get_uint_default(ctx, -1, 255);
-  duk_pop(ctx);
+  int bgR = getIntPropDefault(ctx, opts, "_bgColorR", 255);
+  int bgG = getIntPropDefault(ctx, opts, "_bgColorG", 255);
+  int bgB = getIntPropDefault(ctx, opts, "_bgColorB", 255);
+  int bgA = getIntPropDefault(ctx, opts, "_bgColorA", 255);
 
   wv::WebView *w = new wv::WebView{width, height, true, true, title};
 
@@ -239,29 +258,48 @@ duk_ret_t createWindow(duk_context *ctx) {
   return 0;
 }
 
-duk_ret_t navigate(duk_context *ctx) {
+JSValue navigate(JSContext *ctx, JSValueConst this_val, int argc,
+                 JSValueConst *argv) {
+  if (argc < 2) {
+    std::cout << "n_navigate: requires 2 arguments, got " << argc << std::endl;
+    return JS_EXCEPTION;
+  }
+
   // Get window ID
-  std::string id = duk_to_string(ctx, -1);
-  duk_pop(ctx);
+  std::string id = JS_ToCString(ctx, argv[1]);
 
   // Get url
-  wv::String url = format(duk_to_string(ctx, -1));
-  duk_pop(ctx);
+  wv::String url = format(std::string(JS_ToCString(ctx, argv[0])));
 
   Cout << Str("navigating to ") << url << std::endl;
   windows[id]->navigate(url);
 
-  return 0;
+  return JS_UNDEFINED;
 }
 
-duk_ret_t quitApp(duk_context *ctx) {
+JSValue quitApp(JSContext *ctx, JSValueConst this_val, int argv,
+                JSValueConst *argc) {
   for (auto &it : windows) {
     wv::WebView *w = it.second;
     w->exit();
     delete w;
   }
   windows.clear();
-  return 0;
+
+  return JS_UNDEFINED;
+}
+
+bool evalString(JSContext *ctx, std::string js, const char *filename) {
+  JSValue ret = JS_Eval(ctx, js.c_str(), js.length(), filename, 0);
+  bool error = false;
+
+  if (JS_IsException(ret)) {
+    js_std_dump_error(ctx);
+    error = true;
+  }
+
+  JS_FreeValue(ctx, ret);
+  return error;
 }
 
 WEBVIEW_MAIN {
@@ -294,40 +332,52 @@ WEBVIEW_MAIN {
   std::string mainContents = sstr.str();
   mainFile.close();
 
-  // Create Duktape heap and context
-  auto *ctx = duk_create_heap_default();
-  if (!ctx) {
-    std::cout << "Could not create JS context" << std::endl;
+  // Create QuickJS runtime and context
+  JSRuntime *rt = JS_NewRuntime();
+  if (!rt) {
+    std::cout << "Could not allocate JS runtime" << std::endl;
     return 1;
   }
 
+  JSContext *ctx = JS_NewContext(rt);
+  if (!ctx) {
+    std::cout << "Could not allocate JS context" << std::endl;
+    return 1;
+  }
+
+  // Load global stuff (console.log)
+  // js_std_add_helpers(ctx, 0, nullptr);
+
+  // System modules
+  // js_init_module_std(ctx, "std");
+  // js_init_module_os(ctx, "os");
+
   // JS-C++ bindings
-  duk_push_c_function(ctx, log, DUK_VARARGS);
-  duk_put_global_string(ctx, "n_log");
-  duk_push_c_function(ctx, createWindow, DUK_VARARGS);
-  duk_put_global_string(ctx, "n_createWindow");
-  duk_push_c_function(ctx, navigate, DUK_VARARGS);
-  duk_put_global_string(ctx, "n_navigate");
-  duk_push_c_function(ctx, quitApp, DUK_VARARGS);
-  duk_put_global_string(ctx, "n_quit");
-  duk_push_string(ctx, normalize(path).c_str());
-  duk_put_global_string(ctx, "__dirname");
+  JSValue global_obj = JS_GetGlobalObject(ctx);
+  JS_SetPropertyStr(ctx, global_obj, "n_log",
+                    JS_NewCFunction(ctx, log, "n_log", 1));
+  JS_SetPropertyStr(ctx, global_obj, "n_createWindow",
+                    JS_NewCFunction(ctx, createWindow, "n_createWindow", 1));
+  JS_SetPropertyStr(ctx, global_obj, "n_navigate",
+                    JS_NewCFunction(ctx, navigate, "n_navigate", 1));
+  JS_SetPropertyStr(ctx, global_obj, "n_quit",
+                    JS_NewCFunction(ctx, quitApp, "n_quit", 1));
+  JS_SetPropertyStr(ctx, global_obj, "__dirname",
+                    JS_NewString(ctx, normalize(path).c_str()));
 
   // Execute main script
   std::cout << "running main" << std::endl;
-  if (duk_peval_string(ctx, mainContents.c_str())) {
-    std::cout << "Main error: " << duk_safe_to_string(ctx, -1) << std::endl;
+  if (evalString(ctx, mainContents, "[main]")) {
+    std::cout << "Main error" << std::endl;
     return 1;
   }
-  duk_pop(ctx);
 
   // Emit ready event
   std::cout << "calling n_ready" << std::endl;
-  if (duk_peval_string(ctx, "main.default.n_ready();")) {
-    printf("eval failed: %s\n", duk_safe_to_string(ctx, -1));
+  if (evalString(ctx, "main.default.n_ready();", "[ready]")) {
+    std::cout << "Ready error" << std::endl;
     return 1;
   }
-  duk_pop(ctx);
 
   // Main loop
   std::cout << "entering main loop" << std::endl;
@@ -346,7 +396,9 @@ WEBVIEW_MAIN {
 
   std::cout << "main loop ended" << std::endl;
 
-  // Cleanup Duktape
-  duk_destroy_heap(ctx);
+  // Cleanup QuickJS
+  js_std_free_handlers(rt);
+  JS_FreeContext(ctx);
+  JS_FreeRuntime(rt);
   return 0;
 }
