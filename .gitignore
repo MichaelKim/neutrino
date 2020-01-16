@@ -1,12 +1,13 @@
 .vscode/
 build/
 node_modules/
-lib/
 dist/
 .DS_Store
 winrt/
+winrt_old/
 out/
 .vs/
 CMakeSettings.json
 Debug/
 Release/
+quickjs-2019-10-27/

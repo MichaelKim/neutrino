@@ -2,17 +2,17 @@
 #include "json.hpp"
 #include "webview.hpp"
 
-#include <experimental/filesystem> // fs::absolute, fs::exists
-#include <fstream>                 // File read / write
-#include <iostream>                // Debug output
-#include <sstream>                 // File input to string
-#include <unordered_map>           // std::vector
+#include <filesystem>     // fs::absolute, fs::exists
+#include <fstream>        // File read / write
+#include <iostream>       // Debug output
+#include <sstream>        // File input to string
+#include <unordered_map>  // std::vector
 
 #ifdef WEBVIEW_WIN
-#include <shellapi.h> // For CommandLineToArgvW
+#include <shellapi.h>  // For CommandLineToArgvW
 #endif
 
-namespace fs = std::experimental::filesystem;
+namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 void usage() {
