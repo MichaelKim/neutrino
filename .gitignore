@@ -1,10 +1,10 @@
 .vscode/
 build/
 node_modules/
-lib/neutrino
-lib/neutrino.exe
+lib/
+dist/
 .DS_Store
-winrt_old/
+winrt/
 out/
 .vs/
 CMakeSettings.json

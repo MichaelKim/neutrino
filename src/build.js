@@ -12,9 +12,20 @@ Build process:
 
 const fs = require('fs-extra');
 const path = require('path');
+const argv = require('yargs')
+  .usage('Usage: $0 [options]')
+  .alias('h', 'help')
+  .alias('v', 'version')
+  .alias('m', 'main')
+  .describe('m', 'Path to main build folder (default: ./dist/main)')
+  .alias('r', 'renderer')
+  .describe('r', 'Path to renderer build folder (default: ./dist/renderer)')
+  .argv;
 
-const package = require(path.resolve('./package.json'));
-const { name } = package;
+const mainPath = argv.m || './dist/main';
+const rendererPath = argv.r || './dist/renderer';
+
+const { name } = require(path.resolve('./package.json'));
 
 fs.removeSync(`./dist/${name}-unpacked`);
 fs.ensureDirSync(`./dist/${name}-unpacked/app`);
@@ -24,5 +35,5 @@ const exePath = require.resolve(`./neutrino${execExt}`);
 
 fs.copyFileSync(exePath, `./dist/${name}-unpacked/${name}${execExt}`);
 
-fs.copySync('./dist/main', `./dist/${name}-unpacked/app`);
-fs.copySync('./dist/renderer', `./dist/${name}-unpacked/app`);
+fs.copySync(mainPath, `./dist/${name}-unpacked/app`);
+fs.copySync(rendererPath, `./dist/${name}-unpacked/app`);
