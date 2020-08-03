@@ -9,3 +9,4 @@ out/
 CMakeSettings.json
 quickjs-2019-10-27/
 lib/neutrino*
+WebView2Loader.dll

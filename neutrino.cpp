@@ -1,14 +1,15 @@
+#include <filesystem>     // fs::absolute, fs::exists
+#include <fstream>        // File read / write
+#include <iostream>       // Debug output
+#include <memory>         // std::unique_ptr
+#include <sstream>        // File input to string
+#include <unordered_map>  // std::vector
+
 #include "duktape.h"
 #include "json.hpp"
 #include "webview.hpp"
 
-#include <filesystem>     // fs::absolute, fs::exists
-#include <fstream>        // File read / write
-#include <iostream>       // Debug output
-#include <sstream>        // File input to string
-#include <unordered_map>  // std::vector
-
-#ifdef WEBVIEW_WIN
+#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
 #include <shellapi.h>  // For CommandLineToArgvW
 #endif
 
@@ -31,7 +32,7 @@ Default path: ./app/
 */
 
 // Utility Functions
-#ifdef WEBVIEW_WIN
+#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
 #define Cout std::wcout
 std::wstring format(const std::string &str) {
   if (str.empty()) {
@@ -115,7 +116,7 @@ std::tuple<wv::String, wv::String> readFile(std::string filepath) {
   }
 }
 
-void writeFile(std::string filepath, std::string data) {
+void writeFile(const std::string& filepath, const std::string& data) {
   std::cout << "current dir: " << fs::current_path() << std::endl;
 
   std::cout << "writing file: " << filepath << std::endl;
@@ -124,8 +125,8 @@ void writeFile(std::string filepath, std::string data) {
   output << data;
 }
 
-void callback(wv::WebView &w, std::string &arg) {
-  std::cout << arg << std::endl;
+void callback(wv::WebView &w, wv::String &arg) {
+  Cout << arg << std::endl;
   auto j = json::parse(arg);
   auto type = j["type"].get<std::string>();
   std::cout << type << std::endl;
@@ -152,7 +153,7 @@ void callback(wv::WebView &w, std::string &arg) {
 }
 
 // Webviews
-std::unordered_map<std::string, wv::WebView *> windows;
+std::unordered_map<std::string, std::unique_ptr<wv::WebView>> windows;
 
 // App
 duk_ret_t log(duk_context *ctx) {
@@ -201,7 +202,7 @@ duk_ret_t createWindow(duk_context *ctx) {
   auto bgA = duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
 
-  wv::WebView *w = new wv::WebView{width, height, true, true, title};
+  auto w = std::make_unique<wv::WebView>(width, height, true, true, title);
 
   w->setCallback(callback);
 
@@ -234,7 +235,7 @@ duk_ret_t createWindow(duk_context *ctx) {
     return -1;
   }
 
-  windows[id] = w;
+  windows[id] = std::move(w);
 
   return 0;
 }
@@ -256,16 +257,15 @@ duk_ret_t navigate(duk_context *ctx) {
 
 duk_ret_t quitApp(duk_context *ctx) {
   for (auto &it : windows) {
-    wv::WebView *w = it.second;
+    auto &w = it.second;
     w->exit();
-    delete w;
   }
   windows.clear();
   return 0;
 }
 
 WEBVIEW_MAIN {
-#ifdef WEBVIEW_WIN
+#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
   AllocConsole();
   FILE *out, *err;
   freopen_s(&out, "CONOUT$", "w", stdout);
@@ -286,7 +286,7 @@ WEBVIEW_MAIN {
   Cout << Str("Opening main: ") << path + Str("/main.js") << std::endl;
   std::ifstream mainFile(path + Str("/main.js"));
   if (!mainFile.is_open()) {
-    std::cout << "Cannot open main file" << std::endl;
+    Cout << L"Cannot open main file: " << path << std::endl;
     return 1;
   }
   std::stringstream sstr;
@@ -333,11 +333,10 @@ WEBVIEW_MAIN {
   std::cout << "entering main loop" << std::endl;
   while (!windows.empty()) {
     for (auto it = windows.begin(); it != windows.end();) {
-      wv::WebView *w = it->second;
+      auto &w = it->second;
       if (w->run() != 0) {
         std::cout << "window closing" << std::endl;
         it = windows.erase(it);
-        delete w;
       } else {
         ++it;
       }

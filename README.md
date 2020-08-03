@@ -75,19 +75,19 @@ Within the function, feel free to make any modifications to the default config. 
 For example, here is an example of adding React to your build:
 
 ```js
-module.exports = (config) => {
+module.exports = config => {
   // Add @babel/preset-react to the config
   config.rules.push({
     test: /\.jsx?$/,
     exclude: /node_modules/,
     use: [
       {
-        loader: "babel-loader",
+        loader: 'babel-loader',
         options: {
-          presets: ["@babel/preset-react"],
-        },
-      },
-    ],
+          presets: ['@babel/preset-react']
+        }
+      }
+    ]
   });
 
   return config;
@@ -133,8 +133,9 @@ Currently, Neutrino is highly limited and only supports the following Node / Ele
 
 ## Build
 
-Neutrino uses two external libraries:
+Neutrino uses three external libraries:
 
+- [Duktape](https://duktape.org)
 - [nlohmann's JSON library](https://github.com/nlohmann/json)
 - [my own webview library](https://github.com/LenKagamine/webview)
 
