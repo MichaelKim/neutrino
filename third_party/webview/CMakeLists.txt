@@ -1,5 +1,7 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.15)
 project (webview)
+
+add_library(webview INTERFACE)
 
 if(APPLE)
 	set(WEBVIEW_COMPILE_DEFS "-DWEBVIEW_MAC=1")
@@ -10,6 +12,8 @@ if(APPLE)
 elseif(WIN32)
 	set(WEBVIEW_COMPILE_DEFS "-DWEBVIEW_WIN=1")
 	set(WEBVIEW_LIBS "WindowsApp.lib user32.lib kernel32.lib")
+	# set_target_properties(webview PROPERTIES
+	# 	VS_PACKAGE_REFERENCES "Microsoft.Windows.CppWinRT_2.0.200630.5")
 else()
 	set(WEBVIEW_COMPILE_DEFS "-DWEBVIEW_GTK=1")
 	find_package(PkgConfig REQUIRED)
@@ -19,7 +23,6 @@ else()
 	set(WEBVIEW_LIBS ${GTK3_LIBRARIES} ${WEBKIT2_LIBRARIES})
 endif()
 
-add_library(webview INTERFACE)
 target_include_directories(webview INTERFACE ${PROJECT_SOURCE_DIR} ${WEBVIEW_COMPILE_INCS})
 target_compile_definitions(webview INTERFACE ${WEBVIEW_COMPILE_DEFS})
 target_compile_features(webview INTERFACE cxx_std_17)

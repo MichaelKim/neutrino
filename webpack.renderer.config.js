@@ -21,7 +21,7 @@ const rendererConfig = {
                 [
                   '@babel/preset-env',
                   {
-                    targets: '>1%, not ie 11, not op_mini all'
+                    targets: '>1%, edge 16, not ie 11, not op_mini all'
                   }
                 ]
               ]

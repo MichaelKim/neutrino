@@ -11,17 +11,20 @@ To render a webview, it uses my C++ [webview library](https://github.com/LenKaga
 ## Usage
 
 1. Clone this repo
-2. Get submodules: `git submodule update --init`
-   - For subsequent updates: `git submodule update`
-3. Install Node dependencies: `npm install`
-4. Build JS files: `npm run build`
-5. Build neutrino:
-   - `mkdir build`
-   - `cd build`
-   - `cmake ..`
-   - `make`
-6. To use in another project, link it locally:
-   - `npm install --save-dev ./path/to/neutrino`
+2. Install Node dependencies: `npm install`
+3. Build neutrino
+   - `cmake -S . -B build` to generate build files
+4. To use in another project, link it locally:
+   - `npm install --save-dev /path/to/neutrino`
+
+On Windows, the webview library requires specific build steps to compile. For full details, read the webview's [documentation](https://github.com/LenKagamine/webview/blob/master/docs/build.md).
+
+First, you'll want to use Visual Studio. If using the EdgeHTML-based Edge Legacy browser, make sure the install the [C++/WinRT Visual Studio Extension](https://docs.microsoft.com/en-us/windows/uwp/cpp-and-winrt-apis/intro-to-using-cpp-with-winrt#visual-studio-support-for-cwinrt-xaml-the-vsix-extension-and-the-nuget-package).
+
+Otherwise, to target the Chromium-based Edge, make sure to have the [proper version](https://docs.microsoft.com/en-us/microsoft-edge/webview2/gettingstarted/win32) of Edge installed (currently 82.0.488.0+), then install these NuGet packages:
+
+- Microsoft.Windows.ImplementationLibrary
+- Microsoft.Web.WebView2
 
 ## CLI
 
@@ -72,19 +75,19 @@ Within the function, feel free to make any modifications to the default config. 
 For example, here is an example of adding React to your build:
 
 ```js
-module.exports = config => {
+module.exports = (config) => {
   // Add @babel/preset-react to the config
   config.rules.push({
     test: /\.jsx?$/,
     exclude: /node_modules/,
     use: [
       {
-        loader: 'babel-loader',
+        loader: "babel-loader",
         options: {
-          presets: ['@babel/preset-react']
-        }
-      }
-    ]
+          presets: ["@babel/preset-react"],
+        },
+      },
+    ],
   });
 
   return config;

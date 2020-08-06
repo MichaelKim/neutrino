@@ -4,12 +4,8 @@ node_modules/
 dist/
 .DS_Store
 winrt/
-winrt_old/
 out/
 .vs/
 CMakeSettings.json
-Debug/
-Release/
 quickjs-2019-10-27/
-lib/neutrino.exe
-lib/neutrino
+lib/neutrino*
