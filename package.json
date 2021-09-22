@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LenKagamine/neutrino.git"
+    "url": "git+https://github.com/MichaelKim/neutrino.git"
   },
   "author": "Michael Kim <micklepickle98@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/LenKagamine/neutrino/issues"
+    "url": "https://github.com/MichaelKim/neutrino/issues"
   },
-  "homepage": "https://github.com/LenKagamine/neutrino#readme",
+  "homepage": "https://github.com/MichaelKim/neutrino#readme",
   "devDependencies": {
     "@babel/core": "^7.11.1",
     "@babel/preset-env": "^7.11.0",

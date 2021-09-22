@@ -6,7 +6,7 @@ Note: this project is still in its early stages. Feel free to tinker around with
 
 Neutrino is a experimental lightweight alternative to the popular [Electron framework](https://github.com/electron/electron). It is capable of producing apps that are 100x smaller compared to Electron by leveraging the native web engine of the OS.
 
-To render a webview, it uses my C++ [webview library](https://github.com/LenKagamine/webview).
+To render a webview, it uses my C++ [webview library](https://github.com/MichaelKim/webview).
 
 ## Usage
 
@@ -17,14 +17,7 @@ To render a webview, it uses my C++ [webview library](https://github.com/LenKaga
 4. To use in another project, link it locally:
    - `npm install --save-dev /path/to/neutrino`
 
-On Windows, the webview library requires specific build steps to compile. For full details, read the webview's [documentation](https://github.com/LenKagamine/webview/blob/master/docs/build.md).
-
-First, you'll want to use Visual Studio. If using the EdgeHTML-based Edge Legacy browser, make sure the install the [C++/WinRT Visual Studio Extension](https://docs.microsoft.com/en-us/windows/uwp/cpp-and-winrt-apis/intro-to-using-cpp-with-winrt#visual-studio-support-for-cwinrt-xaml-the-vsix-extension-and-the-nuget-package).
-
-Otherwise, to target the Chromium-based Edge, make sure to have the [proper version](https://docs.microsoft.com/en-us/microsoft-edge/webview2/gettingstarted/win32) of Edge installed (currently 82.0.488.0+), then install these NuGet packages:
-
-- Microsoft.Windows.ImplementationLibrary
-- Microsoft.Web.WebView2
+Make sure to check the [webview build steps](https://github.com/MichaelKim/webview/blob/master/docs/build.md) for your platform.
 
 ## CLI
 
@@ -137,15 +130,15 @@ Neutrino uses three external libraries:
 
 - [Duktape](https://duktape.org)
 - [nlohmann's JSON library](https://github.com/nlohmann/json)
-- [my own webview library](https://github.com/LenKagamine/webview)
+- [my own webview library](https://github.com/MichaelKim/webview)
 
-The JSON library is fairly simple to compile, but my webview library is a bit more complicated. Check out the build steps [there](https://github.com/LenKagamine/webview#build).
+The JSON library is fairly simple to compile, but my webview library is a bit more complicated. Check out the build steps [there](https://github.com/MichaelKim/webview#build).
 
 ### Windows
 
 Use Visual Studio 2019 and CMake.
 
-There is experimental support with `clang-cl`. Check out the [webview README](https://github.com/LenKagamine/webview#windows) under Windows.
+There is experimental support with `clang-cl`. Check out the [webview README](https://github.com/MichaelKim/webview#windows) under Windows.
 
 #### TL;DR:
 
