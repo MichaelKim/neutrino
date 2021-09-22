@@ -9,7 +9,7 @@
 #include "json.hpp"
 #include "webview.hpp"
 
-#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
+#if defined(WEBVIEW_IS_WIN)
 #include <shellapi.h>  // For CommandLineToArgvW
 #endif
 
@@ -32,7 +32,7 @@ Default path: ./app/
 */
 
 // Utility Functions
-#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
+#if defined(WEBVIEW_IS_WIN)
 #define Cout std::wcout
 std::wstring format(const std::string &str) {
   if (str.empty()) {
@@ -116,7 +116,7 @@ std::tuple<wv::String, wv::String> readFile(std::string filepath) {
   }
 }
 
-void writeFile(const std::string& filepath, const std::string& data) {
+void writeFile(const std::string &filepath, const std::string &data) {
   std::cout << "current dir: " << fs::current_path() << std::endl;
 
   std::cout << "writing file: " << filepath << std::endl;
@@ -190,16 +190,16 @@ duk_ret_t createWindow(duk_context *ctx) {
 
   // Background Color (rgba)
   duk_get_prop_string(ctx, -1, "_bgColorR");
-  auto bgR = duk_get_uint_default(ctx, -1, 255);
+  auto bgR = (uint8_t)duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
   duk_get_prop_string(ctx, -1, "_bgColorG");
-  auto bgG = duk_get_uint_default(ctx, -1, 255);
+  auto bgG = (uint8_t)duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
   duk_get_prop_string(ctx, -1, "_bgColorB");
-  auto bgB = duk_get_uint_default(ctx, -1, 255);
+  auto bgB = (uint8_t)duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
   duk_get_prop_string(ctx, -1, "_bgColorA");
-  auto bgA = duk_get_uint_default(ctx, -1, 255);
+  auto bgA = (uint8_t)duk_get_uint_default(ctx, -1, 255);
   duk_pop(ctx);
 
   auto w = std::make_unique<wv::WebView>(width, height, true, true, title);
@@ -255,7 +255,7 @@ duk_ret_t navigate(duk_context *ctx) {
   return 0;
 }
 
-duk_ret_t quitApp(duk_context *ctx) {
+duk_ret_t quitApp(duk_context *) {
   for (auto &it : windows) {
     auto &w = it.second;
     w->exit();
@@ -265,7 +265,7 @@ duk_ret_t quitApp(duk_context *ctx) {
 }
 
 WEBVIEW_MAIN {
-#if defined(WEBVIEW_WIN) || defined(WEBVIEW_EDGE)
+#if defined(WEBVIEW_IS_WIN)
   AllocConsole();
   FILE *out, *err;
   freopen_s(&out, "CONOUT$", "w", stdout);
