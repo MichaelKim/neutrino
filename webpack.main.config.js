@@ -1,17 +1,19 @@
 const path = require('path');
-const webpack = require('webpack');
 const TerserPlugin = require('terser-webpack-plugin');
 
 const mainConfig = {
   entry: './src/main/index.js',
   output: {
+    path: path.resolve('./dist/neutrino'),
     filename: 'main.js',
-    library: 'main'
+    library: 'main',
+    chunkFormat: 'array-push'
   },
+  target: 'es5',
   module: {
     rules: [
       {
-        test: /\.jsx?$/,
+        test: /\.js$/,
         exclude: /node_modules/,
         use: [
           {
@@ -28,11 +30,9 @@ const mainConfig = {
   resolve: {
     alias: {
       fs: 'neutrinojs/lib/fs'
-    },
-    extensions: ['.js', '.jsx']
+    }
   },
   node: {
-    fs: 'empty',
     __dirname: false
   },
   stats: {
@@ -57,19 +57,9 @@ module.exports = (env, argv) => {
         })
       ]
     };
-    mainConfig.plugins.push(
-      new webpack.DefinePlugin({
-        'process.env.PRODUCTION': JSON.stringify(true)
-      })
-    );
   } else {
     mainConfig.mode = 'development';
-    mainConfig.devtool = '#cheap-module-source-map';
-    mainConfig.plugins.push(
-      new webpack.DefinePlugin({
-        'process.env.PRODUCTION': JSON.stringify(false)
-      })
-    );
+    mainConfig.devtool = 'cheap-module-source-map';
   }
 
   return mainConfig;
