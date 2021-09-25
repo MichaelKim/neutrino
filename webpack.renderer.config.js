@@ -6,7 +6,8 @@ const rendererConfig = {
   entry: './src/renderer/index.jsx',
   output: {
     path: path.resolve('./dist/neutrino-renderer'),
-    filename: 'renderer.js'
+    filename: 'renderer.js',
+    clean: true
   },
   target: 'web',
   module: {

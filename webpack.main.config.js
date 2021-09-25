@@ -7,7 +7,8 @@ const mainConfig = {
     path: path.resolve('./dist/neutrino'),
     filename: 'main.js',
     library: 'main',
-    chunkFormat: 'array-push'
+    chunkFormat: 'array-push',
+    clean: true
   },
   target: 'es5',
   module: {
