@@ -36,15 +36,15 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_link_libraries(${PROJECT_NAME} PRIVATE project_options project_warnings duktape json webview)
 
 if (WEBVIEW_STATIC_WEBVIEW2)
+  # Delete WebView2Loader.dll if webview is dynamically linked
+  add_custom_command(
+    TARGET ${PROJECT_NAME}
+    COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/lib/WebView2Loader.dll)
+else()
   # Copy WebView2Loader.dll if webview is statically linked
   add_custom_command(
     TARGET ${PROJECT_NAME}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${CMAKE_BINARY_DIR}/WebView2Loader.dll
             ${CMAKE_SOURCE_DIR}/lib)
-else()
-  # Delete WebView2Loader.dll if webview is dynamically linked
-  add_custom_command(
-    TARGET ${PROJECT_NAME}
-    COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_SOURCE_DIR}/lib/WebView2Loader.dll)
 endif()
